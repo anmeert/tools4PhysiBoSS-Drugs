@@ -27,17 +27,6 @@ import multicellds
 sns.set(style="ticks", palette="Paired")
 sns.set_context('paper')
 
-def read_csv():
-    # reading a cell_output file (plain text ; separated columns)
-    # any function can be used here, using pandas is just a shorcut
-    if args.format == 'mat':
-        df = process_mat(f)
-        phase_col = "current_phase"
-        # This should be changed regardin time stamp in MultiCellDS
-        time *= 60 
-    elif args.format == 'csv':
-        df = process_csv(f, sep=";")
-        phase_col = "phase"
 
 def create_parser():
     parser = argparse.ArgumentParser(description="Plot total cell grouped as Alive/Necrotic/Apoptotic vs Time")
@@ -46,45 +35,23 @@ def create_parser():
 
     parser.add_argument("wildtype_folder", action="store", help="folder that contains all replicates of the wildtype simulation (e.g. output_LNCaP")
     
-    parser.add_argument("--format", action="store", dest="format", choices=("physicell", "physiboss"),
-                        help="Format of the input data", default="physicell")
-
-    parser.add_argument("--figout", action="store", dest="fig_fname", default="./cell_vs_time.png",
-                        help="File name to save the plot")
-                        
-    parser.add_argument("--csvout", action="store", dest="csv_fname", default=None,
-                        help="File name to store the summary table used for the plot")
-
+    parser.add_argument("--drug1")
+    parser.add_argument("--drug2")
     return parser
     
 
 
-def drug_level_to_IC(drug_level, mode):
+def drug_level_to_IC(drug_level):
     if (drug_level == "1"):
-        if (mode == "double"): 
-            return "IC10/2"
-        else:
-            return "IC10"
+        return "IC10"
     elif (drug_level == "2"):
-        if (mode == "double"): 
-            return "IC30/2"
-        else:
-            return "IC30"
+        return "IC30"
     elif (drug_level == "3"):
-        if (mode == "double"): 
-            return "IC50/2"
-        else:
-            return "IC50"
+        return "IC50"
     elif (drug_level == "4"):
-        if (mode == "double"): 
-            return "IC70/2"
-        else:
-            return "IC70"
+        return "IC70"
     elif (drug_level == "5"):
-        if (mode == "double"): 
-            return "IC90/2"
-        else:
-            return "IC90"
+        return "IC90"
     else:
         return ""
 
@@ -95,39 +62,37 @@ def main():
     
     phases_dict = multicellds.default_phases_dict
     phase_grouping = multicellds.default_phase_grouping
-    
-    single_sims_paths = []
-    double_sims_paths = []
-    for directory in os.listdir(args.drug_data_folder):
-        all_subfolders = os.listdir(args.drug_data_folder + "/" + directory)
-        for folder in all_subfolders:
-            if directory == "double":
-                double_sims_paths.append(args.drug_data_folder + directory + "/" + folder)
-            else:
-                single_sims_paths.append(args.drug_data_folder + directory + "/" + folder)
-    
-    all_sims_paths = single_sims_paths + double_sims_paths
-    for directory in os.listdir(args.wildtype_folder):
-        all_sims_paths.append(directory)
 
-    for el in all_sims_paths:
+    sims_paths = []
+    for directory in os.listdir(args.drug_data_folder):
+        if args.drug2 is None:
+            if args.drug1 in directory:
+                sims_paths.append(args.drug_data_folder + directory)
+        else:
+            if args.drug1 in directory and args.drug2 in directory:
+                sims_paths.append(args.drug_data_folder + directory)
+  
+    for directory in os.listdir(args.wildtype_folder):
+        sims_paths.append(args.wildtype_folder + directory)
+
+    for el in sims_paths:
         print(el)
 
 
-    sim_auc_pairs = {}
+    sim_auc_live_pairs = {}
+    sim_auc_apoptotic_pairs = {}
     drug_1 = []
     drug_2 = []
     conc_1 = []
     conc_2 = []
 
-    for data_folder in all_sims_paths:
+    for data_folder in sims_paths:
         # Globing output files according to the output format specified
-        if args.format == 'physicell':
-            phase_col = "current_phase"
+        phase_col = "current_phase"
 
-            mcds = multicellds.MultiCellDS(output_folder=data_folder)
-            df_iterator = mcds.cells_as_frames_iterator()
-            num_of_files = mcds.cells_file_count()
+        mcds = multicellds.MultiCellDS(output_folder=data_folder)
+        df_iterator = mcds.cells_as_frames_iterator()
+        num_of_files = mcds.cells_file_count()
         
         # Initializing a Pandas Databrafe to store the data
         columns = ["time", "live", "apoptotic", "necrotic"]
@@ -168,14 +133,15 @@ def main():
             first_conc = second_conc = "None"
         elif len(used_drugs) == 1:
             first_drug = used_drugs.pop(0)
-            first_conc = drug_level_to_IC(simulation_name[17], "single")
+            # replace drug levels with IC values 
+            first_conc = drug_level_to_IC(simulation_name[17])
             second_drug = first_drug
             second_conc = first_conc
         else:
             first_drug = used_drugs.pop(0)
-            first_conc = drug_level_to_IC(simulation_name[17], "double")
+            first_conc = drug_level_to_IC(simulation_name[17])
             second_drug = used_drugs.pop(0)
-            second_conc  = drug_level_to_IC(simulation_name[19], "double")
+            second_conc  = drug_level_to_IC(simulation_name[19])
                
         drug_1.append(first_drug)
         drug_2.append(second_drug)
@@ -183,12 +149,15 @@ def main():
         conc_2.append(second_conc)
         
         # calculate the auc for the current simulation 
-        auc = np.trapz(df_time_course['live'], df_time_course.time)
-        auc_sims = integrate.simps(df_time_course['live'], df_time_course.time)
-        print("AUC trapz: " + str(auc))
-        print("AUC simps: " + str(auc_sims))
-        sim_auc_pairs[simulation_name] = auc
-        
+        auc_live = np.trapz(df_time_course['live'], df_time_course.time)
+        auc_live_sims = integrate.simps(df_time_course['live'], df_time_course.time)
+        print("AUC trapz: " + str(auc_live))
+        print("AUC simps: " + str(auc_live_sims))
+        sim_auc_live_pairs[simulation_name] = auc_live
+
+        auc_apoptotic =  np.trapz(df_time_course['apoptotic'], df_time_course.time)
+        sim_auc_apoptotic_pairs[simulation_name] = auc_apoptotic
+
         # Set time column as the dataframe index
         sns.set_context('paper')
         patch_color = "lightgrey"
@@ -227,31 +196,34 @@ def main():
         fig.tight_layout()
         # different figure name for each data folder 
         base_name = os.path.basename(os.path.normpath(data_folder))
-        fig_fname = "./timecourse" + "_" + base_name + ".png"
-        fig.savefig(fig_fname)
-        print("Saving fig as %s" % fig_fname)
-        
-        if args.csv_fname:
-            df_time_course.to_csv(args.csv_fname, sep="\t")
-            print("Saving csv as %s" % args.csv_fname)
+        # fig_fname = "./timecourse" + "_" + base_name + ".png"
+        # fig.savefig(fig_fname)
+        # print("Saving fig as %s" % fig_fname)
     
 
     # with sim_auc pair list calculate now the list with differences in AUC to the wildtype 
-    wildtype_name = os.path.basename(os.path.normpath(args.wildtype_folder))
-    wildtype_auc_dict = {k:v for k,v in sim_auc_pairs.items if wildtype_name in k}
-    wildtype_auc = sum(wildtype_auc_dict.values()) / len(wildtype_auc_dict.values)
-    auc_differences = {k: (v - wildtype_auc) for k,v in sim_auc_pairs.items()}
-    log2_auc_ratio = {k: (np.log2(v/wildtype_auc)) for k,v in sim_auc_pairs.items()}
+    wildtype_name = "output_LNCaP"
+    wildtype_auc_live_dict = {k:v for k,v in sim_auc_live_pairs.items() if wildtype_name in k}
+    wildtype_auc_live = sum(wildtype_auc_live_dict.values()) / len(wildtype_auc_live_dict.values())
+    auc_live_differences = {k: (v - wildtype_auc_live) for k,v in sim_auc_live_pairs.items()}
+    log2_auc_live_ratio = {k: (np.log2(v/wildtype_auc_live)) for k,v in sim_auc_live_pairs.items()}
 
-    # replace drug levels with IC values 
+    # with sim_auc pair list calculate now the list with differences in AUC to the wildtype 
+    wildtype_auc_apoptotic_dict = {k:v for k,v in sim_auc_apoptotic_pairs.items() if wildtype_name in k}
+    wildtype_auc_apoptotic = sum(wildtype_auc_apoptotic_dict.values()) / len(wildtype_auc_apoptotic_dict.values())
+    auc_apoptotic_differences = {k: (v - wildtype_auc_apoptotic) for k,v in sim_auc_apoptotic_pairs.items()}
+    log2_auc_apoptotic_ratio = {k: (np.log2(v/wildtype_auc_apoptotic)) for k,v in sim_auc_apoptotic_pairs.items()} 
 
     # store the information in a dataframe
-    drug_dataframe = pd.DataFrame(list(sim_auc_pairs.items()), columns=["simulation", "auc"]) 
-    drug_dataframe["auc_difference"] = list(auc_differences.values())
-    drug_dataframe["log2_auc_ratio"] = list(log2_auc_ratio.values())
+    drug_dataframe = pd.DataFrame(list(sim_auc_live_pairs.items()), columns=["simulation", "auc_live"]) 
+    drug_dataframe["auc_live_difference"] = list(auc_live_differences.values())
+    drug_dataframe["log2_auc_live_ratio"] = list(log2_auc_live_ratio.values())
+    drug_dataframe["auc_apoptotic"] = list(sim_auc_apoptotic_pairs.values())
+    drug_dataframe["log2_auc_apoptotic_ratio"] = list(log2_auc_apoptotic_ratio.values())
     drug_dataframe["drug_1"] = drug_1
     drug_dataframe["drug_2"] = drug_2
-    print(conc_1)
+    print(list(sim_auc_apoptotic_pairs.values()))
+    print(list(log2_auc_apoptotic_ratio.values()))
     drug_dataframe["conc_1"] = conc_1
     drug_dataframe["conc_2"] = conc_2
 
@@ -263,41 +235,68 @@ def main():
     # print(test_drug_dataframe.head())
     # print(test_drug_dataframe.count())
     # create a figure that contains all the subplots 
-    fig, axes = plt.subplots(nrows = 6, ncols = 6, sharex='col', sharey='row', figsize=(12,9))
-    cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
+    fig, axes = plt.subplots(sharex='col', sharey='row', figsize=(12,9))
+    # cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
   
-    for row in range(6):
-        for col in range(6):
-            if row < col:
-                axes[row, col].axis('off')
-            # get the current drugs
-            drug_a = drug_names[row]
-            drug_b = drug_names[col]
-            # get the data for the drugs used 
-            # print(drug_a)
-            # print(drug_b)
-            drug_pair_data = drug_dataframe.loc[(drug_dataframe["drug_1"] == drug_a) & (drug_dataframe["drug_2"] == drug_b)]
-            # print(drug_pair_data.head())
-            if not drug_pair_data.empty:
-                df_wide = drug_pair_data.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_ratio', aggfunc='first')
-                print(df_wide)
-                # cmap = sns.diverging_palette(220,20, as_cmap=True)
-                ax = sns.heatmap(ax=axes[col, row], data=df_wide, cbar_ax=cbar_ax, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
-                ax.invert_yaxis()
-                ax.tick_params(axis='x', labelrotation=45)
-                axes[col, row].set(xlabel= "", ylabel= "")
+    # print(drug_pair_data.head())
+    df_wide = drug_dataframe.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio', aggfunc='first')
+    print(df_wide)
+    # cmap = sns.diverging_palette(220,20, as_cmap=True)
+    ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
+    ax.invert_yaxis()
+    ax.tick_params(axis='x', labelrotation=45)
+ 
+    # for ax, col in zip(axes[5,:], drug_names):
+    #     ax.set_xlabel(col)
 
-    for ax, col in zip(axes[5,:], drug_names):
-        ax.set_xlabel(col)
-
-    for ax, row in zip(axes[:,0], drug_names):
-        ax.set_ylabel(row, rotation=90, size='large')
+    # for ax, row in zip(axes[:,0], drug_names):
+    #     ax.set_ylabel(row, rotation=90, size='large')
 
     fig.tight_layout()
-    fig.subplots_adjust(top=0.95)
+    # fig.subplots_adjust(top=0.95)
     fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
     # plt.show()
-    plt.savefig('all_heatmaps' + '.png')
+    if args.drug2 is None:
+        plt.savefig('heatmap_' + args.drug1 + '.png')
+    else:
+        plt.savefig('heatmap_' + args.drug1 + "_" + args.drug2 + '.png')
+
+    # # print apoptosis heatmap
+    # fig, axes = plt.subplots(nrows = 6, ncols = 6, sharex='col', sharey='row', figsize=(12,9))
+    # cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
+  
+    # for row in range(6):
+    #     for col in range(6):
+    #         if row < col:
+    #             axes[row, col].axis('off')
+    #         # get the current drugs
+    #         drug_a = drug_names[row]
+    #         drug_b = drug_names[col]
+    #         # get the data for the drugs used 
+    #         # print(drug_a)
+    #         # print(drug_b)
+    #         drug_pair_data = drug_dataframe.loc[(drug_dataframe["drug_1"] == drug_a) & (drug_dataframe["drug_2"] == drug_b)]
+    #         # print(drug_pair_data.head())
+    #         if not drug_pair_data.empty:
+    #             df_wide = drug_pair_data.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_apoptotic_ratio', aggfunc='first')
+    #             print(df_wide)
+    #             # cmap = sns.diverging_palette(220,20, as_cmap=True)
+    #             ax = sns.heatmap(ax=axes[col, row], data=df_wide, cbar_ax=cbar_ax, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
+    #             ax.invert_yaxis()
+    #             ax.tick_params(axis='x', labelrotation=45)
+    #             axes[col, row].set(xlabel= "", ylabel= "")
+
+    # for ax, col in zip(axes[5,:], drug_names):
+    #     ax.set_xlabel(col)
+
+    # for ax, row in zip(axes[:,0], drug_names):
+    #     ax.set_ylabel(row, rotation=90, size='large')
+
+    # fig.tight_layout()
+    # fig.subplots_adjust(top=0.95)
+    # fig.suptitle('Apoptosis variation of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
+    # # plt.show()
+    # plt.savefig('heatmap_apoptosis_multiple_wildtype' + '.png')
 main() 
 
 # %%

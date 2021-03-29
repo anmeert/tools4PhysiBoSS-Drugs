@@ -27,17 +27,6 @@ import multicellds
 sns.set(style="ticks", palette="Paired")
 sns.set_context('paper')
 
-def read_csv():
-    # reading a cell_output file (plain text ; separated columns)
-    # any function can be used here, using pandas is just a shorcut
-    if args.format == 'mat':
-        df = process_mat(f)
-        phase_col = "current_phase"
-        # This should be changed regardin time stamp in MultiCellDS
-        time *= 60 
-    elif args.format == 'csv':
-        df = process_csv(f, sep=";")
-        phase_col = "phase"
 
 def create_parser():
     parser = argparse.ArgumentParser(description="Plot total cell grouped as Alive/Necrotic/Apoptotic vs Time")
@@ -46,15 +35,6 @@ def create_parser():
 
     parser.add_argument("wildtype_folder", action="store", help="folder that contains all replicates of the wildtype simulation (e.g. output_LNCaP")
     
-    parser.add_argument("--format", action="store", dest="format", choices=("physicell", "physiboss"),
-                        help="Format of the input data", default="physicell")
-
-    parser.add_argument("--figout", action="store", dest="fig_fname", default="./cell_vs_time.png",
-                        help="File name to save the plot")
-                        
-    parser.add_argument("--csvout", action="store", dest="csv_fname", default=None,
-                        help="File name to store the summary table used for the plot")
-
     return parser
     
 
