@@ -239,12 +239,23 @@ def main():
     # cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
   
     # print(drug_pair_data.head())
-    df_wide = drug_dataframe.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio', aggfunc='first')
+    drug_df_without_wildtype = drug_dataframe[(drug_dataframe.drug_1 != "wildtype")]
+    drug_df_filtered = drug_df_without_wildtype[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'log2_auc_live_ratio']]
+    drug_df_averages = drug_df_without_wildtype.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
+    output_name = ""
+    if args.drug2 is None:
+        output_name = "dataframe_" + args.drug1 + ".csv"
+    else:
+        output_name = "dataframe_" + args.drug1 + "_" + args.drug2 + ".csv"
+    drug_df_averages.to_csv(output_name)
+    drug_dataframe.to_csv("full_data" + output_name)
+    df_wide = drug_df_averages.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio', aggfunc='first')
     print(df_wide)
     # cmap = sns.diverging_palette(220,20, as_cmap=True)
     ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
     ax.invert_yaxis()
-    ax.tick_params(axis='x', labelrotation=45)
+    
+    # ax.tick_params(axis='x', labelrotation=45)
  
     # for ax, col in zip(axes[5,:], drug_names):
     #     ax.set_xlabel(col)
@@ -254,7 +265,7 @@ def main():
 
     fig.tight_layout()
     # fig.subplots_adjust(top=0.95)
-    fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
+    # fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
     # plt.show()
     if args.drug2 is None:
         plt.savefig('heatmap_' + args.drug1 + '.png')
