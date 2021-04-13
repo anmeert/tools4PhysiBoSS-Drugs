@@ -15,6 +15,7 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import seaborn as sns
 from itertools import combinations, product
+from matplotlib.colors import DivergingNorm
 
 
 modules_path = os.path.dirname(os.path.realpath(__file__))
@@ -65,12 +66,21 @@ def main():
 
     sims_paths = []
     for directory in os.listdir(args.drug_data_folder):
-        if args.drug2 is None:
-            if args.drug1 in directory:
-                sims_paths.append(args.drug_data_folder + directory)
+        if args.drug2 is None and  "single" in directory:
+            # we just search for the heatmap of a single drug
+            for sub_dir in args.drug_data_folder + directory:
+                if args.drug1 in sub_dir:
+                    sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
         else:
-            if args.drug1 in directory and args.drug2 in directory:
-                sims_paths.append(args.drug_data_folder + directory)
+            # we search for the heatmap of a pair of drugs 
+            if "double" in directory:
+                for sub_dir in os.listdir(args.drug_data_folder + directory):
+                    if args.drug1 in sub_dir and args.drug2 in sub_dir:
+                        sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
+            if "single" in directory:
+                for sub_dir in os.listdir(args.drug_data_folder + directory):
+                    if args.drug1 in sub_dir or args.drug2 in sub_dir:
+                        sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
   
     for directory in os.listdir(args.wildtype_folder):
         sims_paths.append(args.wildtype_folder + directory)
@@ -228,8 +238,6 @@ def main():
     drug_dataframe["conc_2"] = conc_2
 
     # list of dictionaries where each dictionary contains the same drug-pairs
-
-    print(drug_dataframe)
     
     drug_names = ["Ipatasertib", "Afatinib", "Ulixertinib", "Luminespib", "Selumetinib", "Pictilisib"]
     # print(test_drug_dataframe.head())
@@ -241,7 +249,10 @@ def main():
     # print(drug_pair_data.head())
     drug_df_without_wildtype = drug_dataframe[(drug_dataframe.drug_1 != "wildtype")]
     drug_df_filtered = drug_df_without_wildtype[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'log2_auc_live_ratio']]
-    drug_df_averages = drug_df_without_wildtype.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
+    drug_df_doubles = drug_df_filtered[drug_df_filtered["drug_1"] != drug_df_filtered["drug_2"]]
+    drug_df_averages = drug_df_doubles.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
+    drug_df_averages = drug_df_averages.reset_index()
+    print(drug_df_averages)
     output_name = ""
     if args.drug2 is None:
         output_name = "dataframe_" + args.drug1 + ".csv"
@@ -250,7 +261,7 @@ def main():
     drug_df_averages.to_csv(output_name)
     drug_dataframe.to_csv("full_data" + output_name)
     df_wide = drug_df_averages.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio', aggfunc='first')
-    print(df_wide)
+    # print(df_wide)
     # cmap = sns.diverging_palette(220,20, as_cmap=True)
     ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
     ax.invert_yaxis()
@@ -308,6 +319,85 @@ def main():
     # fig.suptitle('Apoptosis variation of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
     # # plt.show()
     # plt.savefig('heatmap_apoptosis_multiple_wildtype' + '.png')
+
+
+    ############################################################################################
+    # Synergy calculations 
+    ############################################################################################
+
+    # only calculate bliss in the case that we have two drugs 
+    if(args.drug2 != None):
+        # calculate the bliss independence reference model 
+        double_drugs = drug_df_averages
+        single_drugs = drug_dataframe[drug_dataframe["drug_1"] == drug_dataframe["drug_2"]]
+        double_drugs["CI"] = 1.0
+        double_drugs["bliss_independence"] = 0.0
+        print("single drugs:")
+        print(single_drugs)
+        for index, row in double_drugs.iterrows():
+            print("row: ")
+            print(row)
+            print(row["drug_1"])
+            drug_a = single_drugs[(single_drugs["drug_1"] == row["drug_1"]) & (single_drugs["conc_1"] == row["conc_1"])]
+            print("Drug a:")
+            print(drug_a)
+            drug_b = single_drugs[(single_drugs["drug_1"] == row["drug_2"]) & (single_drugs["conc_1"] == row["conc_2"])]
+            print("drug B:")
+            print(drug_b)
+            E_a = drug_a["log2_auc_live_ratio"].iloc[0]
+            E_b = drug_b["log2_auc_live_ratio"].iloc[0]
+            print(E_a)
+            print(E_b)
+            
+            # Bliss independence can only be calculated with positive values, but we are interested in the inhibition (negative values)
+            # so set the positive values to zero and take the absolute values of the negative inhibition values
+            if E_a > 0:
+                E_a = 0
+            else:
+                E_a = abs(E_a)
+            if E_b > 0:
+                E_b = 0
+            else:
+                E_b = abs(E_b)
+
+            bliss_independence = E_a + E_b - E_a * E_b
+            print("Bliss independence:")
+            print(bliss_independence)
+            double_drugs.at[index, "bliss_independence"] = bliss_independence
+
+            # calculate the combination index 
+            CI = double_drugs.at[index, "bliss_independence"] / row["log2_auc_live_ratio"]
+            double_drugs.at[index, "CI"] = CI
+        print(double_drugs)
+
+        double_df_filtered = double_drugs[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'CI']]
+        # double_df_averages = drug_df_filtered.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
+        df_wide = double_df_filtered.pivot_table( index= 'conc_2', columns='conc_1', values='CI', aggfunc='first')
+        print(df_wide)
+        fig, axes = plt.subplots(sharex='col', sharey='row', figsize=(12,9))
+        # cmap = sns.diverging_palette(220,20, as_cmap=True)
+        norm = DivergingNorm(vmin=0, vcenter=1, vmax=10)
+        ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'Combination Index (CI)', 'ticks': [0,1,2,3,4,5,6,7,8,9,10]}, cmap="RdBu", norm = norm)
+        ax.invert_yaxis()
+        
+        # ax.tick_params(axis='x', labelrotation=45)
+    
+        # for ax, col in zip(axes[5,:], drug_names):
+        #     ax.set_xlabel(col)
+
+        # for ax, row in zip(axes[:,0], drug_names):
+        #     ax.set_ylabel(row, rotation=90, size='large')
+
+        fig.tight_layout()
+        # fig.subplots_adjust(top=0.95)
+        # fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
+        # plt.show()
+        if args.drug2 is None:
+            plt.savefig('bliss_' + args.drug1 + '.png')
+        else:
+            plt.savefig('bliss_' + args.drug1 + "_" + args.drug2 + '.png')
+
+
 main() 
 
 # %%

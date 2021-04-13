@@ -31,8 +31,8 @@ sns.set_context('paper')
 def create_parser():
     parser = argparse.ArgumentParser(description="Plot total cell grouped as Alive/Necrotic/Apoptotic vs Time")
     
-    parser.add_argument("drug_data_folder", action="store", help="folder were all the folders with drug data for one cell line is stored (e.g. output) ")
-
+    parser.add_argument("double_folder", action="store", help="folder were all the folders with double drug data for one cell line is stored (e.g. double) ")
+    parser.add_argument("single_folder", action="store", help="folder were all the folders with single drug data for one cell line is stored (e.g. single) ")
     parser.add_argument("wildtype_folder", action="store", help="folder that contains all replicates of the wildtype simulation (e.g. output_LNCaP")
     
     return parser
@@ -63,13 +63,14 @@ def main():
     
     single_sims_paths = []
     double_sims_paths = []
-    for directory in os.listdir(args.drug_data_folder):
-        all_subfolders = os.listdir(args.drug_data_folder + "/" + directory)
+    dir_list = [args.double_folder,args.single_folder] 
+    for directory in dir_list:
+        all_subfolders = os.listdir(directory)
         for folder in all_subfolders:
-            if directory == "double":
-                double_sims_paths.append(args.drug_data_folder + directory + "/" + folder)
+            if "double" in directory:
+                double_sims_paths.append(directory + folder)
             else:
-                single_sims_paths.append(args.drug_data_folder + directory + "/" + folder)
+                single_sims_paths.append(directory + folder)
     
     all_sims_paths = single_sims_paths + double_sims_paths
     for directory in os.listdir(args.wildtype_folder):
@@ -88,12 +89,11 @@ def main():
 
     for data_folder in all_sims_paths:
         # Globing output files according to the output format specified
-        if args.format == 'physicell':
-            phase_col = "current_phase"
+        phase_col = "current_phase"
 
-            mcds = multicellds.MultiCellDS(output_folder=data_folder)
-            df_iterator = mcds.cells_as_frames_iterator()
-            num_of_files = mcds.cells_file_count()
+        mcds = multicellds.MultiCellDS(output_folder=data_folder)
+        df_iterator = mcds.cells_as_frames_iterator()
+        num_of_files = mcds.cells_file_count()
         
         # Initializing a Pandas Databrafe to store the data
         columns = ["time", "live", "apoptotic", "necrotic"]
@@ -308,6 +308,84 @@ def main():
     fig.suptitle('Apoptosis variation of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
     # plt.show()
     plt.savefig('heatmap_apoptosis_multiple_wildtype' + '.png')
+
+
+    # ############################################################################################
+    # # Synergy calculations 
+    # ############################################################################################
+
+    # # calculate the bliss independence reference model 
+    # double_drugs = drug_dataframe[drug_dataframe["drug_1"] != drug_dataframe["drug_2"]]
+    # single_drugs = drug_dataframe[drug_dataframe["drug_1"] == drug_dataframe["drug_2"]]
+    # double_drugs["CI"] = 1
+    # double_drugs["bliss_independence"] = 0
+    # for index, row in double_drugs.iterrows():
+    #     print(row['drug_1'])
+    #     drug_a = single_drugs[(single_drugs["drug_1"] == row["drug_1"]) & (single_drugs["conc_1"] == row["conc_1"])]
+    #     drug_b = single_drugs[(single_drugs["drug_1"] == row["drug_2"]) & (single_drugs["conc_1"] == row["conc_2"])]
+    #     print(drug_b)
+    #     E_a = drug_a["log2_auc_live_ratio"].iloc[0]
+    #     E_b = drug_b["log2_auc_live_ratio"].iloc[0]
+    #     # Bliss independence can only be calculated with positive values, but we are interested in the inhibition (negative values)
+    #     # so set the positive values to zero and take the absolute values of the negative inhibition values
+    #     if E_a > 0:
+    #         E_a = 0
+    #     else:
+    #         abs(E_a)
+    #     if E_b > 0:
+    #         E_b = 0
+    #     else:
+    #         abs(E_b)
+    #     print(E_a)
+    #     print(E_b)
+    #     bliss_independence = E_a + E_b - E_a * E_b
+    #     print(bliss_independence)
+    #     double_drugs.at[index, "bliss_independence"] = bliss_independence
+    #      # calculate the combination index 
+    #     CI = row["bliss_independence"] / row["log2_auc_live_ratio"]
+    #     print(CI)
+    #     double_drugs.at[index, "CI"] = CI
+    # print(double_drugs)
+
+    # # plot the same heatmap as above just with the combination index values 
+
+    # fig, axes = plt.subplots(nrows = 6, ncols = 6, sharex='col', sharey='row', figsize=(12,9))
+    # cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
+  
+    # for row in range(6):
+    #     for col in range(6):
+    #         if row < col:
+    #             axes[row, col].axis('off')
+    #         # get the current drugs
+    #         drug_a = drug_names[row]
+    #         drug_b = drug_names[col]
+    #         # get the data for the drugs used 
+    #         # print(drug_a)
+    #         # print(drug_b)
+    #         drug_pair_data = double_drugs.loc[(double_drugs["drug_1"] == drug_a) & (double_drugs["drug_2"] == drug_b)]
+    #         # print(drug_pair_data.head())
+    #         if not drug_pair_data.empty:
+    #             df_wide = drug_pair_data.pivot_table( index= 'conc_2', columns='conc_1', values='CI', aggfunc='first')
+    #             print(df_wide)
+    #             # cmap = sns.diverging_palette(220,20, as_cmap=True)
+    #             ax = sns.heatmap(ax=axes[col, row], data=df_wide, cbar_ax=cbar_ax, cbar_kws={'label': 'Combination index (CI)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
+    #             ax.invert_yaxis()
+    #             ax.tick_params(axis='x', labelrotation=45)
+    #             axes[col, row].set(xlabel= "", ylabel= "")
+
+    # for ax, col in zip(axes[5,:], drug_names):
+    #     ax.set_xlabel(col)
+
+    # for ax, row in zip(axes[:,0], drug_names):
+    #     ax.set_ylabel(row, rotation=90, size='large')
+
+    # fig.tight_layout()
+    # fig.subplots_adjust(top=0.95)
+    # fig.suptitle('Bliss independence - combination index of each drug-pair in LNCaP', y=0.98)
+    # # plt.show()
+    # plt.savefig('Bliss_independence' + '.png')
+
+
 main() 
 
 # %%
