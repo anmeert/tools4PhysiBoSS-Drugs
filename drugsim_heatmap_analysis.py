@@ -74,7 +74,8 @@ def main():
     
     all_sims_paths = single_sims_paths + double_sims_paths
     for directory in os.listdir(args.wildtype_folder):
-        all_sims_paths.append(args.wildtype_folder + directory)
+        if os.path.isdir(args.wildtype_folder + directory):
+            all_sims_paths.append(args.wildtype_folder + directory)
 
     for el in all_sims_paths:
         print(el)

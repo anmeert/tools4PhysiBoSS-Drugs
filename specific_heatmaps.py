@@ -15,7 +15,7 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import seaborn as sns
 from itertools import combinations, product
-from matplotlib.colors import DivergingNorm
+# from matplotlib.colors import DivergingNorm
 
 
 modules_path = os.path.dirname(os.path.realpath(__file__))
@@ -73,17 +73,18 @@ def main():
                     sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
         else:
             # we search for the heatmap of a pair of drugs 
-            if "double" in directory:
+            if "double" == directory:
                 for sub_dir in os.listdir(args.drug_data_folder + directory):
                     if args.drug1 in sub_dir and args.drug2 in sub_dir:
                         sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
-            if "single" in directory:
+            if "single" == directory:
                 for sub_dir in os.listdir(args.drug_data_folder + directory):
                     if args.drug1 in sub_dir or args.drug2 in sub_dir:
                         sims_paths.append(args.drug_data_folder + directory + "/" + sub_dir)
   
     for directory in os.listdir(args.wildtype_folder):
-        sims_paths.append(args.wildtype_folder + directory)
+        if os.path.isdir(args.wildtype_folder + directory):
+            sims_paths.append(args.wildtype_folder + directory)
 
     for el in sims_paths:
         print(el)
@@ -139,19 +140,29 @@ def main():
         first_conc = second_conc = ""
         if len(used_drugs) == 0:
             #wildtype 
-            first_drug = second_drug = "wildtype"
+            first_drug = args.drug1
+            second_drug = args.drug2
             first_conc = second_conc = "None"
         elif len(used_drugs) == 1:
-            first_drug = used_drugs.pop(0)
-            # replace drug levels with IC values 
-            first_conc = drug_level_to_IC(simulation_name[17])
-            second_drug = first_drug
-            second_conc = first_conc
+            if used_drugs.pop(0) == args.drug1:
+                first_drug = args.drug1
+                # replace drug levels with IC values 
+                first_conc = drug_level_to_IC(simulation_name[17])
+                second_drug = args.drug2
+                second_conc = "None"
+            else:
+                first_drug = args.drug1
+                first_conc = "None"
+                second_drug = args.drug2
+                second_conc = drug_level_to_IC(simulation_name[17])
+                
+                
         else:
             first_drug = used_drugs.pop(0)
             first_conc = drug_level_to_IC(simulation_name[17])
             second_drug = used_drugs.pop(0)
             second_conc  = drug_level_to_IC(simulation_name[19])
+    
                
         drug_1.append(first_drug)
         drug_2.append(second_drug)
@@ -247,12 +258,14 @@ def main():
     # cbar_ax = fig.add_axes([0.89, 0.45, 0.05, 0.5])
   
     # print(drug_pair_data.head())
-    drug_df_without_wildtype = drug_dataframe[(drug_dataframe.drug_1 != "wildtype")]
-    drug_df_filtered = drug_df_without_wildtype[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'log2_auc_live_ratio']]
-    drug_df_doubles = drug_df_filtered[drug_df_filtered["drug_1"] != drug_df_filtered["drug_2"]]
-    drug_df_averages = drug_df_doubles.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
+    # drug_df_without_wildtype = drug_dataframe[(drug_dataframe.drug_1 != "wildtype")]
+    drug_df_filtered = drug_dataframe[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'log2_auc_live_ratio']]
+    # drug_df_doubles = drug_df_filtered[drug_df_filtered["drug_1"] != drug_df_filtered["drug_2"]]
+    drug_df_averages = drug_df_filtered.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
     drug_df_averages = drug_df_averages.reset_index()
     print(drug_df_averages)
+    drug_df_averages['conc_1'] = pd.Categorical(drug_df_averages['conc_1'], ordered=True, categories=['None', 'IC10', 'IC30', 'IC50', 'IC70', 'IC90'])
+    drug_df_averages['conc_2'] = pd.Categorical(drug_df_averages['conc_2'], ordered=True, categories=['None', 'IC10', 'IC30', 'IC50', 'IC70', 'IC90'])
     output_name = ""
     if args.drug2 is None:
         output_name = "dataframe_" + args.drug1 + ".csv"
@@ -260,10 +273,12 @@ def main():
         output_name = "dataframe_" + args.drug1 + "_" + args.drug2 + ".csv"
     drug_df_averages.to_csv(output_name)
     drug_dataframe.to_csv("full_data" + output_name)
-    df_wide = drug_df_averages.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio', aggfunc='first')
-    # print(df_wide)
+    df_wide = drug_df_averages.pivot_table( index= 'conc_2', columns='conc_1', values='log2_auc_live_ratio')
+    print(df_wide)
     # cmap = sns.diverging_palette(220,20, as_cmap=True)
     ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'log2 (drug_AUC / wildtype_AUC)'}, cmap="RdBu", vmin=-0.5, vmax=0.5)
+    plt.xlabel(args.drug1)
+    plt.ylabel(args.drug2)
     ax.invert_yaxis()
     
     # ax.tick_params(axis='x', labelrotation=45)
@@ -328,8 +343,8 @@ def main():
     # only calculate bliss in the case that we have two drugs 
     if(args.drug2 != None):
         # calculate the bliss independence reference model 
-        double_drugs = drug_df_averages
-        single_drugs = drug_dataframe[drug_dataframe["drug_1"] == drug_dataframe["drug_2"]]
+        double_drugs = drug_df_averages.loc[(drug_df_averages["conc_1"] != "None") & (drug_df_averages["conc_2"] != "None")]
+        single_drugs = drug_df_averages.loc[(drug_df_averages["conc_1"] == "None") | (drug_df_averages["conc_2"] == "None")]
         double_drugs["CI"] = 1.0
         double_drugs["bliss_independence"] = 0.0
         print("single drugs:")
@@ -341,7 +356,7 @@ def main():
             drug_a = single_drugs[(single_drugs["drug_1"] == row["drug_1"]) & (single_drugs["conc_1"] == row["conc_1"])]
             print("Drug a:")
             print(drug_a)
-            drug_b = single_drugs[(single_drugs["drug_1"] == row["drug_2"]) & (single_drugs["conc_1"] == row["conc_2"])]
+            drug_b = single_drugs[(single_drugs["drug_2"] == row["drug_2"]) & (single_drugs["conc_2"] == row["conc_2"])]
             print("drug B:")
             print(drug_b)
             E_a = drug_a["log2_auc_live_ratio"].iloc[0]
@@ -374,11 +389,18 @@ def main():
         # double_df_averages = drug_df_filtered.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
         df_wide = double_df_filtered.pivot_table( index= 'conc_2', columns='conc_1', values='CI', aggfunc='first')
         print(df_wide)
+        if args.drug2 is None:
+            df_wide.to_csv('bliss_dataframe_' + args.drug1 + '.csv')
+        else:
+            df_wide.to_csv('bliss_dataframe_' + args.drug1 + "_" + args.drug2 + '.csv')
+        
         fig, axes = plt.subplots(sharex='col', sharey='row', figsize=(12,9))
         # cmap = sns.diverging_palette(220,20, as_cmap=True)
-        norm = DivergingNorm(vmin=0, vcenter=1, vmax=10)
-        ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'Combination Index (CI)', 'ticks': [0,1,2,3,4,5,6,7,8,9,10]}, cmap="RdBu", norm = norm)
+        # norm = DivergingNorm(vmin=0, vcenter=1, vmax=10)
+        ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'Combination Index (CI)', 'ticks': [0,1,2,3,4,5,6,7,8,9,10]}, cmap="RdBu", vmin=0, center=1, vmax=10)
         ax.invert_yaxis()
+        plt.xlabel(args.drug1)
+        plt.ylabel(args.drug2)
         
         # ax.tick_params(axis='x', labelrotation=45)
     
