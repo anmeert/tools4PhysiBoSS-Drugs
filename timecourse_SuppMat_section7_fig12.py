@@ -5,7 +5,6 @@
 
 import os, re, sys
 import glob, json
-import argparse
 
 import numpy as np
 import pandas as pd
@@ -14,7 +13,6 @@ from scipy.io import loadmat
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from itertools import combinations, product
 
 
 modules_path = os.path.dirname(os.path.realpath(__file__))
@@ -27,27 +25,17 @@ import multicellds
 sns.set(style="ticks", palette="Paired")
 sns.set_context('paper')
 
-def create_parser():
-    parser = argparse.ArgumentParser(description="Plot total cell grouped as Alive/Necrotic/Apoptotic vs Time")
-    
-    parser.add_argument("cellline_data_folder", action="store", help="folder were the folders with drug data for all cell lines are stored (e.g. output) ")
 
-    return parser
-    
+cellline_data_folder = "./data/SuppMat_section7_fig12_data/"   
 
 def main():
-   
-    parser = create_parser()
-    args = parser.parse_args()
-    
+
     phases_dict = multicellds.default_phases_dict
     phase_grouping = multicellds.default_phase_grouping
     
     celllines_sims_paths = []
-    for directory in os.listdir(args.cellline_data_folder):
-        if "output_" in directory:
-            print(directory)
-            celllines_sims_paths.append(args.cellline_data_folder + directory)
+    for directory in os.listdir(cellline_data_folder):
+        celllines_sims_paths.append(cellline_data_folder + directory)
 
     for el in celllines_sims_paths:
         print(el)
@@ -61,7 +49,8 @@ def main():
     
     # plot Alive vs Time
     curve_params = {}
-    cellline_color_dict = {'BPH1': '#f50707', 'DU145':'#f58a07', '22Rv1': '#0b03ff', 'PC3': '#12de19', 'LNCaP': '#0ffaf2', 'VCaP': '#a210eb'}
+    # cellline_color_dict = {'BPH1': '#f50707', 'DU145':'#f58a07', '22Rv1': '#0b03ff', 'PC3': '#12de19', 'LNCaP': '#0ffaf2', 'VCaP': '#a210eb'}
+    cellline_color_dict = {'output': '#f50707', 'Pictilisib':'#0b03ff'}
     curve_params['live'] = {'color': '#75db75', 'label': 'Alive'}
     curve_params['apoptotic'] = {'color': '#ef4242', 'label': 'Apoptotic'}
     curve_params['necrotic'] = {'color':'#97723d', 'label': 'Necrotic'}
@@ -104,7 +93,10 @@ def main():
         for k,v in cellline_color_dict.items():
             if k in data_folder:
                 c = v
-                l = k
+                if ("Pictilisib" in data_folder):
+                    l = "Pictilisib (IC90)"
+                else:
+                    l = "no drug"
         ax.plot(df_time_course.time, df_time_course["live"], "-", c=c, label=l, linewidth=line_width)
         
     # setting axes labels
@@ -114,7 +106,7 @@ def main():
     ax.tick_params(axis='x', labelsize=12)
     ax.tick_params(axis='y', labelsize=12)
 
-    ax.set(ylim=(0,50000))
+    ax.set(ylim=(0,17000))
     
     # Showing legend
     ax.spines['right'].set_visible(False)
@@ -125,8 +117,8 @@ def main():
     # Saving fig
     fig.tight_layout()
     # different figure name for each data folder 
-    base_name = "all_celllines"
-    fig_fname = "./timecourse" + "_" + base_name + ".png"
+    base_name = "SuppMat_Fig12"
+    fig_fname = "output/timecourse" + "_" + base_name + ".png"
     fig.savefig(fig_fname)
     print("Saving fig as %s" % fig_fname)
     
