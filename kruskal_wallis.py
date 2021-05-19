@@ -12,7 +12,7 @@ import seaborn as sns
 from itertools import combinations, product
 
 # load the csv 
-drug_dataframe = pd.read_csv("./LNCaP_simulation_data.csv")
+drug_dataframe = pd.read_csv("./data/LNCaP_simulation_data.csv")
 
 # go through all drug combinations
 drug_names = ["Ipatasertib", "Afatinib", "Ulixertinib", "Luminespib", "Selumetinib", "Pictilisib"]

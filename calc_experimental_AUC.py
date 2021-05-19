@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 #%%
-data = pd.read_csv("./LNCaP_experimental_data.csv")
+data = pd.read_csv("./data/LNCaP_experimental_data.csv")
 data.head()
 # %%
 pd.set_option("Display.max_rows", None)

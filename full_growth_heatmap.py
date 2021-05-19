@@ -28,7 +28,7 @@ class MidpointNormalize(mcolors.Normalize):
         x, y = [-v_ext, self.midpoint, v_ext], [0, 0.5, 0.9]
         return np.ma.masked_array(np.interp(value, x, y))
  
-drug_dataframe = pd.read_csv("./LNCaP_simulation_data.csv")
+drug_dataframe = pd.read_csv("./data/LNCaP_simulation_data.csv")
 
 drug_names = ["Ipatasertib", "Afatinib", "Ulixertinib", "Luminespib", "Selumetinib", "Pictilisib"]
 

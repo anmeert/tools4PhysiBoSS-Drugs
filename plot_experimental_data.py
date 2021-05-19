@@ -8,7 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # load the csv 
-drug_dataframe = pd.read_csv("./LNCaP_experimental_data.csv")
+drug_dataframe = pd.read_csv("./data/LNCaP_experimental_data.csv")
 print(drug_dataframe.head())
 
 selum_data = drug_dataframe.loc[(drug_dataframe['drug'] == "Selumetinib") & (drug_dataframe['time2'] > 0) & (drug_dataframe['time2'] < 15)]
