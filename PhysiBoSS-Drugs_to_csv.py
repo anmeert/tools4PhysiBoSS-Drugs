@@ -23,9 +23,9 @@ import multicellds
 def create_parser():
     parser = argparse.ArgumentParser(description="Plot total cell grouped as Alive/Necrotic/Apoptotic vs Time")
     
-    parser.add_argument("double_folder", action="store", help="folder were all the folders with double drug data for one cell line is stored (e.g. double) ")
-    parser.add_argument("single_folder", action="store", help="folder were all the folders with single drug data for one cell line is stored (e.g. single) ")
-    parser.add_argument("wildtype_folder", action="store", help="folder that contains all replicates of the wildtype simulation (e.g. output_LNCaP")
+    parser.add_argument("-double","--double_folder", nargs='?', action="store", help="folder were all the folders with double drug data for one cell line is stored (e.g. double) ")
+    parser.add_argument("-single","--single_folder", nargs='?',  action="store", help="folder were all the folders with single drug data for one cell line is stored (e.g. single) ")
+    parser.add_argument("-untreated","--untreated_folder", nargs='?', action="store", help="folder that contains all replicates of the untreated simulation (e.g. output_LNCaP")
     
     return parser
     
@@ -56,20 +56,27 @@ def main():
     
     single_sims_paths = []
     double_sims_paths = []
+    untreated_sims_paths = []
     dir_list = [args.double_folder,args.single_folder] 
-    for directory in dir_list:
-        all_subfolders = os.listdir(directory)
-        for folder in all_subfolders:
-            if "double" in directory:
-                double_sims_paths.append(directory + folder)
-            else:
-                single_sims_paths.append(directory + folder)
     
-    all_sims_paths = single_sims_paths + double_sims_paths
-    for directory in os.listdir(args.wildtype_folder):
-        if os.path.isdir(args.wildtype_folder + directory):
-            all_sims_paths.append(args.wildtype_folder + directory)
-
+    if args.double_folder:
+        subfolders = os.listdir(args.double_folder)
+        for folder in subfolders:
+            double_sims_paths.append(args.double_folder + folder)
+    
+    if args.single_folder:
+        subfolders = os.listdir(args.single_folder)
+        for folder in subfolders:
+            single_sims_paths.append(args.single_folder + folder)
+    
+    if args.untreated_folder:
+        subfolders = os.listdir(args.untreated_folder)
+        for folder in subfolders:
+            if os.path.isdir(args.untreated_folder + folder):
+                untreated_sims_paths.append(args.untreated_folder + folder)
+    
+    all_sims_paths = single_sims_paths + double_sims_paths + untreated_sims_paths
+   
     # for el in all_sims_paths:
     #     print(el)
 
