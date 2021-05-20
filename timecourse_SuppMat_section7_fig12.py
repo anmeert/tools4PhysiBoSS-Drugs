@@ -119,6 +119,8 @@ def main():
     # different figure name for each data folder 
     base_name = "SuppMat_Fig12"
     fig_fname = "output/timecourse" + "_" + base_name + ".png"
+    if not os.path.exists('output'):
+        os.makedirs('output')
     fig.savefig(fig_fname)
     print("Saving fig as %s" % fig_fname)
     

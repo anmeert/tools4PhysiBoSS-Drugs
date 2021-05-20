@@ -98,5 +98,7 @@ for ax, row in zip(axes[:,0], drug_names):
 fig.tight_layout()
 fig.subplots_adjust(top=0.95)
 fig.suptitle('Combinatorial indexes for all drug combinations tested on LNCaP', y=0.98)
+if not os.path.exists('output'):
+    os.makedirs('output')
 plt.savefig('output/bliss_full' + '.png', dpi=300)
  

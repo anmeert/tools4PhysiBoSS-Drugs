@@ -93,6 +93,8 @@ plt.ylabel(drug2, labelpad=15)
 fig.tight_layout()
 fig.subplots_adjust(top=0.95)
 fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
+if not os.path.exists('output'):
+    os.makedirs('output')
 plt.savefig('output/bliss_pair_' + drug1 + "_" + drug2 + '.png')
 
 

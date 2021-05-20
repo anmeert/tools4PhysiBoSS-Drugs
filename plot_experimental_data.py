@@ -2,7 +2,7 @@
 # coding: utf-8
 # author: Annika Meert 
 # plot experimental LNCaP data 
-
+import os
 import pandas as pd
 import seaborn as sns 
 import matplotlib.pyplot as plt
@@ -25,6 +25,8 @@ plt.ylabel("Cell Index (a.u.)")
 leg=ax1.get_legend()
 title = 'Drug dose (uM)'
 leg.set_title(title)
+if not os.path.exists('output'):
+    os.makedirs('output')
 fig1.savefig("output/Selum_experimental_data.png", dpi= 300)
 
 fig2, ax2 = plt.subplots()

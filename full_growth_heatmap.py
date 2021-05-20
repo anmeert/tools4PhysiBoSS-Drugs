@@ -68,6 +68,8 @@ for ax, row in zip(axes[:,0], drug_names):
 fig.tight_layout()
 fig.subplots_adjust(top=0.95)
 fig.suptitle('Growth behaviour of LNCaP upon drug treatment with respect to no-drug LNCaP', y=0.98)
+if not os.path.exists('output'):
+    os.makedirs('output')
 plt.savefig('output/full_growth_heatmap' + '.png')
 
 

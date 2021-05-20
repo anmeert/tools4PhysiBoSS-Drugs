@@ -161,5 +161,7 @@ def main():
     drug_dataframe = pd.DataFrame({'simulation_name': simulation_name, 'drug_1': drug_1, 'drug_2': drug_2, 'conc_1': conc_1, 'conc_2': conc_2, 'auc_live': auc_live, 'auc_apop': auc_apoptotic})
 
     output_name = "simulation_data.csv"
-    drug_dataframe.to_csv(output_name) 
+    if not os.path.exists('output'):
+        os.makedirs('output')
+    drug_dataframe.to_csv('output/' + output_name) 
 main()

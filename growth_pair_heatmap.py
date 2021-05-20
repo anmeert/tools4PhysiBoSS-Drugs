@@ -63,4 +63,6 @@ plt.ylabel(drug2, labelpad=15)
 
 
 fig.tight_layout()
+if not os.path.exists('output'):
+    os.makedirs('output')
 plt.savefig('output/heatmap_pair_' + drug1 + "_" + drug2 + '.png', dpi=300)
