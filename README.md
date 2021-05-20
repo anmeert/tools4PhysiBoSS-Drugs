@@ -32,14 +32,14 @@ For plotting the complete growth and synergy heatmaps (SuppMat, Fig 13, Fig 14, 
 
 ### Kruskal-Wallis
 
-To test which of the drug combinations is significant as Kruskal-Wallis rank sum test can be performed with the script **kruskal-wallis.py**. The path to the simulation data and the used drugs have to be specified inside the script. <p>&nbsp;</p>
+To test which of the drug combinations is significant a Kruskal-Wallis rank sum test can be performed with the script **kruskal-wallis.py**. The path to the simulation data and the used drugs have to be specified inside the script. <p>&nbsp;</p>
 
 ### Experimental validation
 
-The experimental data used in my thesis is stored in **data/LNCaP_experimental_data** Plots of the experimental data can be obtained with the script **plot_experimental_data**. The output will be saved in the output folder of the repository. \
+The experimental data used in my thesis is stored in **data/LNCaP_experimental_data.csv** Plots of the experimental data can be obtained with the script **plot_experimental_data.py**. The output will be saved in the output folder of the repository. \
 To calculate the experimental AUCs the script **calc_experimental_AUC.py** can be used.
-To validate the results additional drug simulations were performed for *Luminespib*, *Pictilisib* and *Selumetinib* with matching drug concentrations. The corresponding CSV files can be found in **data/validation_Luminespib_3_3uM.csv**,**data/validation_Pictilisib_10uM.csv** and **data/validation_Selumetinib_30uM.csv**. The AUCs and growth indices for those simulations can be calculated with the script **validation_simulation_AUC.py**. <p>&nbsp;</p>
+To validate the results additional drug simulations were performed for *Luminespib*, *Pictilisib* and *Selumetinib* with matching drug concentrations. The corresponding CSV files can be found in **data/validation_Luminespib_3_3uM.csv**,**data/validation_Pictilisib_10uM.csv** and **data/validation_Selumetinib_30uM.csv**. The growth indices for those simulations can be calculated with the script **validation_simulation_AUC.py**. <p>&nbsp;</p>
 
 ### Plotting the time course
 
-The time course of each simulation can be plotted as for example in SuppMat, Fig 12 with the script **plot_time_course.py** from [https://github.com/migp11/tools4physicell](https://github.com/migp11/tools4physicell). In this repository the script **timecourse_SuppMat_section7_fig12.py** contains the code to obtain SuppMat, Fig 12.
+The script to plot the timecourse of drug simulations as in SuppMat, Fig 12 is **timecourse_SuppMat_section7_fig12.py** which is based on the **plot_time_course.py** script from [https://github.com/migp11/tools4physicell](https://github.com/migp11/tools4physicell).
