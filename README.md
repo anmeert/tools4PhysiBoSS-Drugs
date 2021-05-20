@@ -1,7 +1,7 @@
 
 # Introduction
 
-This repository contains the scripts that are necessary to perform drug simulations with PhysiBoSS-Drugs and the data analysis of my master thesis "PhysiBoSS-Drugs: A personalized multiscale simulation framework that enables predicting drug synergies in cell populations”.
+This repository contains the scripts that are necessary to perform drug simulations with PhysiBoSS-Drugs ([https://github.com/anmeert/PhysiBoSSv2](https://github.com/anmeert/PhysiBoSSv2)) and the data analysis of my master thesis "PhysiBoSS-Drugs: A personalized multiscale simulation framework that enables predicting drug synergies in cell populations”.
 
 # Available scripts
 
@@ -32,7 +32,7 @@ For plotting the complete growth and synergy heatmaps (SuppMat, Fig 13, Fig 14, 
 
 ### Kruskal-Wallis
 
-To test which of the drug combinations is significant a Kruskal-Wallis rank sum test can be performed with the script **kruskal-wallis.py**. The path to the simulation data and the used drugs have to be specified inside the script. <p>&nbsp;</p>
+To test which of the drug combinations is significant a Kruskal-Wallis rank sum test can be performed with the script **kruskal_wallis.py**. The path to the simulation data and the used drugs have to be specified inside the script. <p>&nbsp;</p>
 
 ### Experimental validation
 
