@@ -1,7 +1,7 @@
 
 # Introduction
 
-This repository contains the scripts that are necessary to perform drug simulations with PhysiBoSS-Drugs ([https://github.com/anmeert/PhysiBoSSv2](https://github.com/anmeert/PhysiBoSSv2)) and the data analysis of my master thesis "PhysiBoSS-Drugs: A personalized multiscale simulation framework that enables predicting drug synergies in cell populations”.
+This repository contains the scripts that are necessary to perform drug simulations with PhysiBoSS-Drugs ([https://github.com/anmeert/PhysiBoSSv2](https://github.com/anmeert/PhysiBoSSv2)) and the data analysis of my master thesis "PhysiBoSS-Drugs: A customizable drug simulation framework that enables predicting drug synergies in cell populations”.
 
 # Available scripts
 
