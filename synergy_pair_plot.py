@@ -25,11 +25,12 @@ class MidpointNormalize(mcolors.Normalize):
     def __call__(self, value, clip=None):
         v_ext = np.max( [ np.abs(self.vmin), np.abs(self.vmax) ] )
         # for bliss independence
-        x, y = [-v_ext, self.midpoint, v_ext], [-5, 0.5, 0.7]
+        #x, y = [-v_ext, self.midpoint, v_ext], [-5, 0.5, 0.7]
+        x, y = [-v_ext, self.midpoint, v_ext], [-2, 0.5, 0.6]
         return np.ma.masked_array(np.interp(value, x, y))
 
 drug_dataframe = pd.read_csv("./data/LNCaP_simulation_data.csv")
-drug1 = "Ipatasertib"
+drug1 = "Luminespib"
 drug2 = "Pictilisib"
 
 # calculate the medians for all replicates
@@ -77,14 +78,14 @@ for index, row in double_drugs.iterrows():
 double_df_filtered = double_drugs[['drug_1', 'drug_2', 'conc_1', 'conc_2', 'CI']]
 # double_df_averages = drug_df_filtered.groupby(['drug_1', 'drug_2', 'conc_1', 'conc_2']).mean()
 df_wide = double_df_filtered.pivot_table( index= 'conc_2', columns='conc_1', values='CI', aggfunc='first')
-
+sns.set(font_scale=2.0)
 fig, axes = plt.subplots(sharex='col', sharey='row', figsize=(12,9))
 # cmap = sns.diverging_palette(220,20, as_cmap=True)
 cmap = plt.get_cmap("BrBG_r")
 x = np.arange( 0, 1, 1e-1 )
 xlen = x.shape[ 0 ]
 z = np.random.random( xlen**2 )*12 - 2
-norm = MidpointNormalize( midpoint = 1 , vmin= 0.5 , vmax=5.0)
+norm = MidpointNormalize( midpoint = 1 , vmin= 0.7 , vmax=1.5)
 ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'Combination Index (CI)'}, cmap=cmap, norm=norm)
 ax.invert_yaxis()
 plt.xlabel(drug1, labelpad=15)
@@ -92,10 +93,9 @@ plt.ylabel(drug2, labelpad=15)
 
 fig.tight_layout()
 fig.subplots_adjust(top=0.95)
-fig.suptitle('Growth behaviour of LNCaP upon drug administration with respect to wildtype LNCaP', y=0.98)
 if not os.path.exists('output'):
     os.makedirs('output')
-plt.savefig('output/bliss_pair_' + drug1 + "_" + drug2 + '.png')
+plt.savefig('output/bliss_pair_' + drug1 + "_" + drug2 + '.png', dpi=300)
 
 
 

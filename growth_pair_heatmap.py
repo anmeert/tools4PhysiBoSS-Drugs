@@ -21,11 +21,11 @@ class MidpointNormalize(mcolors.Normalize):
     def __call__(self, value, clip=None):
         v_ext = np.max( [ np.abs(self.vmin), np.abs(self.vmax) ] )
         # for heatmaps
-        x, y = [-v_ext, self.midpoint, v_ext], [0, 0.5, 0.9]
+        x, y = [-v_ext, self.midpoint, v_ext], [0, 0.5, 0.8]
         return np.ma.masked_array(np.interp(value, x, y))
 
 drug_dataframe = pd.read_csv("./data/LNCaP_simulation_data.csv")
-drug1 = "Ipatasertib"
+drug1 = "Luminespib"
 drug2 = "Pictilisib"
 
 # calculate the medians for all replicates
@@ -55,7 +55,7 @@ df_wide = drug_df_medians.pivot_table( index= 'conc_2', columns='conc_1', values
 sns.set(font_scale=2.0)
 fig, axes = plt.subplots(sharex='col', sharey='row', figsize=(12,9))
 cmap = "RdBu"
-norm = MidpointNormalize( midpoint = 0, vmin=-0.32, vmax=0.2)
+norm = MidpointNormalize( midpoint = 0, vmin=-0.32, vmax=0.05)
 ax = sns.heatmap(data=df_wide, cbar_kws={'label': 'growth index'}, cmap=cmap, norm=norm)
 ax.invert_yaxis()
 plt.xlabel(drug1, labelpad=15)
@@ -65,4 +65,4 @@ plt.ylabel(drug2, labelpad=15)
 fig.tight_layout()
 if not os.path.exists('output'):
     os.makedirs('output')
-plt.savefig('output/heatmap_pair_' + drug1 + "_" + drug2 + '.png', dpi=300)
+plt.savefig('output/heatmap_pair_legend_' + drug1 + "_" + drug2 + '.png', dpi=300)
