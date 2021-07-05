@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-lncap_data = pd.read_csv("data/SuppFile6_LNCaP_phenotype.tsv", sep='\t')
+lncap_data = pd.read_csv("data/MaBoSS_data_LNCaP.tsv", sep='\t')
 nodes = ["AKT", "EGFR", "ERK", "HSPs", "MEK1_2", "PI3K"]
 
 single = lncap_data[lncap_data["TYPE"] == "SINGLE"]
